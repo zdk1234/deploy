@@ -15,22 +15,22 @@ public class FileModel implements Serializable {
     /**
      * 新增的文件
      */
-    private List<String> addedFileList = new ArrayList<>();
+    private List<FileBase> addedFileList = new ArrayList<>();
 
     /**
      * 修改的文件
      */
-    private List<String> diffFileList = new ArrayList<>();
+    private List<FileBase> diffFileList = new ArrayList<>();
 
     /**
      * 删除的文件
      */
-    private List<String> deletedFileList = new ArrayList<>();
+    private List<FileBase> deletedFileList = new ArrayList<>();
 
     public FileModel() {
     }
 
-    public FileModel(List<String> addedFileList, List<String> diffFileList, List<String> deletedFileList) {
+    public FileModel(List<FileBase> addedFileList, List<FileBase> diffFileList, List<FileBase> deletedFileList) {
         this.addedFileList = addedFileList;
         this.diffFileList = diffFileList;
         this.deletedFileList = deletedFileList;
@@ -41,27 +41,27 @@ public class FileModel implements Serializable {
         return !f;
     }
 
-    public void addFile(String file) {
+    public void addFile(FileBase file) {
         this.addedFileList.add(file);
     }
 
-    public void addDiffFile(String file) {
+    public void addDiffFile(FileBase file) {
         this.diffFileList.add(file);
     }
 
-    public void addDeletedFile(String file) {
+    public void addDeletedFile(FileBase file) {
         this.deletedFileList.add(file);
     }
 
-    public List<String> getAddedFileList() {
+    public List<FileBase> getAddedFileList() {
         return addedFileList;
     }
 
-    public List<String> getDiffFileList() {
+    public List<FileBase> getDiffFileList() {
         return diffFileList;
     }
 
-    public List<String> getDeletedFileList() {
+    public List<FileBase> getDeletedFileList() {
         return deletedFileList;
     }
 }

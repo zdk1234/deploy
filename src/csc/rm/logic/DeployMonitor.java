@@ -1,5 +1,6 @@
 package csc.rm.logic;
 
+import csc.rm.bean.FileBase;
 import csc.rm.bean.FileModel;
 import csc.rm.rmi.RmiFileTransfer;
 import csc.rm.rmi.RmiHandleFactory;
@@ -89,25 +90,25 @@ public class DeployMonitor {
                         if (!file.isDirectory()) {
                             boolean isSameFile = FileUtil.isSmaeFile(file, FILE_MAP.get(key));
                             if (!isSameFile) {
-                                fileModel.addDiffFile(file.getAbsolutePath());
+                                fileModel.addDiffFile(new FileBase(file.getAbsolutePath(), false));
                             }
                         }
                     } else {
-                        fileModel.addFile(file.getAbsolutePath());
+                        fileModel.addFile(new FileBase(file.getAbsolutePath(), file.isDirectory()));
                     }
                 }
 
                 // 获取删除的文件
                 FILE_MAP.forEach((key, file) -> {
                     if (!fileMap.containsKey(key)) {
-                        fileModel.addDeletedFile(file.getAbsolutePath());
+                        fileModel.addDeletedFile(new FileBase(file.getAbsolutePath(), file.isDirectory()));
                     }
                 });
 
                 //TODO: 调用RMI接口告知 fileModel 并让client端读取变动文件
-                List<String> addedFileList = fileModel.getAddedFileList();
-                List<String> diffFileList = fileModel.getDiffFileList();
-                List<String> deletedFileList = fileModel.getDeletedFileList();
+                List<FileBase> addedFileList = fileModel.getAddedFileList();
+                List<FileBase> diffFileList = fileModel.getDiffFileList();
+                List<FileBase> deletedFileList = fileModel.getDeletedFileList();
 
                 if (addedFileList.size() != 0) {
                     System.out.println("新增:" + addedFileList);
@@ -124,10 +125,10 @@ public class DeployMonitor {
                     rmiFileTransfer.setFileModel(fileModel);
 
                     Map<String, byte[]> dataMap = new HashMap<>();
-                    addedFileList.stream().map(File::new).filter(file -> !file.isDirectory()).forEach(file -> {
-                        try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
+                    addedFileList.stream().filter(fileBase -> !fileBase.isDirectory()).forEach(fileBase -> {
+                        try (InputStream is = new FileInputStream(new File(fileBase.getFilePath())); BufferedInputStream bis = new BufferedInputStream(is)) {
                             byte[] bytes = bis.readAllBytes();
-                            dataMap.put(file.getAbsolutePath(), bytes);
+                            dataMap.put(fileBase.getFilePath(), bytes);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
