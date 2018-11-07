@@ -1,5 +1,6 @@
 package csc.rm.logic;
 
+import csc.rm.bean.CompareableFileBean;
 import csc.rm.bean.FileBase;
 import csc.rm.bean.FileModel;
 import csc.rm.rmi.RmiFileTransfer;
@@ -8,10 +9,7 @@ import csc.rm.rmi.RmiService;
 import csc.rm.util.FileUtil;
 import csc.rm.util.PropertiesUtil;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -24,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DeployMonitor {
 
-    private static Map<String, File> FILE_MAP = new LinkedHashMap<>();
+    private static Map<String, CompareableFileBean> FILE_MAP = new LinkedHashMap<>();
 
     private static Executor executor = Executors.newSingleThreadExecutor();
 
@@ -45,7 +43,7 @@ public class DeployMonitor {
 
     }
 
-    public static void init() {
+    public static void init() throws IOException {
         sourcePath = PropertiesUtil.getValue("monitor.sourcepath");
         if (Objects.equals(sourcePath, "")) {
             throw new IllegalStateException("conf/config.properties -> monitor.sourcepath 配置监视目录为空");
@@ -79,18 +77,24 @@ public class DeployMonitor {
     private static void monitor() {
         while (runSwitch.get()) {
             try {
-                final Map<String, File> fileMap = getFiles(sourcePath);
+                final Map<String, CompareableFileBean> fileMap = getFiles(sourcePath);
                 FileModel fileModel = new FileModel();
 
                 // 获取新增&修改的文件
-                for (Map.Entry<String, File> entry : fileMap.entrySet()) {
+                for (Map.Entry<String, CompareableFileBean> entry : fileMap.entrySet()) {
+                    // 当前文件夹快照
                     String key = entry.getKey();
-                    File file = entry.getValue();
+                    CompareableFileBean compareableFileBean = entry.getValue();
+                    File file = compareableFileBean.getFile();
+
                     if (FILE_MAP.containsKey(key)) {
                         if (!file.isDirectory()) {
-                            boolean isSameFile = FileUtil.isSmaeFile(file, FILE_MAP.get(key));
-                            if (!isSameFile) {
-                                fileModel.addDiffFile(new FileBase(file.getAbsolutePath(), false));
+                            CompareableFileBean cfb = FILE_MAP.get(key);
+                            if (cfb != null) {
+                                boolean isSameFile = Objects.equals(cfb.getMD5(), compareableFileBean.getMD5());
+                                if (!isSameFile) {
+                                    fileModel.addDiffFile(new FileBase(file.getAbsolutePath(), false));
+                                }
                             }
                         }
                     } else {
@@ -99,8 +103,9 @@ public class DeployMonitor {
                 }
 
                 // 获取删除的文件
-                FILE_MAP.forEach((key, file) -> {
+                FILE_MAP.forEach((key, compareableFileBean) -> {
                     if (!fileMap.containsKey(key)) {
+                        File file = compareableFileBean.getFile();
                         fileModel.addDeletedFile(new FileBase(file.getAbsolutePath(), file.isDirectory()));
                     }
                 });
@@ -153,7 +158,7 @@ public class DeployMonitor {
      * @param path
      * @return
      */
-    private static Map<String, File> getFiles(String path) {
+    private static Map<String, CompareableFileBean> getFiles(String path) throws IOException {
         File folder = new File(path);
         if (!folder.exists()) {
             throw new IllegalStateException("检索文件夹不存在:" + folder.getAbsolutePath());
@@ -162,8 +167,10 @@ public class DeployMonitor {
             throw new IllegalStateException("检索目标:" + folder.getAbsolutePath() + "不是一个文件夹");
         }
         List<File> fileList = FileUtil.getFileList(folder);
-        Map<String, File> tMap = new LinkedHashMap<>();
-        fileList.forEach(file -> tMap.put(file.getAbsolutePath(), file));
+        Map<String, CompareableFileBean> tMap = new LinkedHashMap<>();
+        for (File file : fileList) {
+            tMap.put(file.getAbsolutePath(), new CompareableFileBean(file, file.isDirectory() ? null : FileUtil.getFileMD5(file)));
+        }
         return tMap;
     }
 }

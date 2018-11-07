@@ -19,6 +19,7 @@ public class DeployMain {
             DeployMonitor.run();
         } catch (Exception e) {
             DeployMonitor.stop();
+            e.printStackTrace();
         }
     }
 }
