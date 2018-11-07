@@ -1,6 +1,5 @@
 package csc.rm.bean;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,22 +15,22 @@ public class FileModel implements Serializable {
     /**
      * 新增的文件
      */
-    private List<File> addedFileList = new ArrayList<>();
+    private List<String> addedFileList = new ArrayList<>();
 
     /**
      * 修改的文件
      */
-    private List<File> diffFileList = new ArrayList<>();
+    private List<String> diffFileList = new ArrayList<>();
 
     /**
      * 删除的文件
      */
-    private List<File> deletedFileList = new ArrayList<>();
+    private List<String> deletedFileList = new ArrayList<>();
 
     public FileModel() {
     }
 
-    public FileModel(List<File> addedFileList, List<File> diffFileList, List<File> deletedFileList) {
+    public FileModel(List<String> addedFileList, List<String> diffFileList, List<String> deletedFileList) {
         this.addedFileList = addedFileList;
         this.diffFileList = diffFileList;
         this.deletedFileList = deletedFileList;
@@ -42,27 +41,27 @@ public class FileModel implements Serializable {
         return !f;
     }
 
-    public void addFile(File file) {
+    public void addFile(String file) {
         this.addedFileList.add(file);
     }
 
-    public void addDiffFile(File file) {
+    public void addDiffFile(String file) {
         this.diffFileList.add(file);
     }
 
-    public void addDeletedFile(File file) {
+    public void addDeletedFile(String file) {
         this.deletedFileList.add(file);
     }
 
-    public List<File> getAddedFileList() {
+    public List<String> getAddedFileList() {
         return addedFileList;
     }
 
-    public List<File> getDiffFileList() {
+    public List<String> getDiffFileList() {
         return diffFileList;
     }
 
-    public List<File> getDeletedFileList() {
+    public List<String> getDeletedFileList() {
         return deletedFileList;
     }
 }

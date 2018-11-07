@@ -89,25 +89,25 @@ public class DeployMonitor {
                         if (!file.isDirectory()) {
                             boolean isSameFile = FileUtil.isSmaeFile(file, FILE_MAP.get(key));
                             if (!isSameFile) {
-                                fileModel.addDiffFile(file);
+                                fileModel.addDiffFile(file.getAbsolutePath());
                             }
                         }
                     } else {
-                        fileModel.addFile(file);
+                        fileModel.addFile(file.getAbsolutePath());
                     }
                 }
 
                 // 获取删除的文件
                 FILE_MAP.forEach((key, file) -> {
                     if (!fileMap.containsKey(key)) {
-                        fileModel.addDeletedFile(file);
+                        fileModel.addDeletedFile(file.getAbsolutePath());
                     }
                 });
 
                 //TODO: 调用RMI接口告知 fileModel 并让client端读取变动文件
-                List<File> addedFileList = fileModel.getAddedFileList();
-                List<File> diffFileList = fileModel.getDiffFileList();
-                List<File> deletedFileList = fileModel.getDeletedFileList();
+                List<String> addedFileList = fileModel.getAddedFileList();
+                List<String> diffFileList = fileModel.getDiffFileList();
+                List<String> deletedFileList = fileModel.getDeletedFileList();
 
                 if (addedFileList.size() != 0) {
                     System.out.println("新增:" + addedFileList);
@@ -124,7 +124,7 @@ public class DeployMonitor {
                     rmiFileTransfer.setFileModel(fileModel);
 
                     Map<String, byte[]> dataMap = new HashMap<>();
-                    addedFileList.stream().filter(file -> !file.isDirectory()).forEach(file -> {
+                    addedFileList.stream().map(File::new).filter(file -> !file.isDirectory()).forEach(file -> {
                         try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
                             byte[] bytes = bis.readAllBytes();
                             dataMap.put(file.getAbsolutePath(), bytes);
