@@ -81,9 +81,11 @@ public class DeployMonitor {
                     String key = entry.getKey();
                     File file = entry.getValue();
                     if (FILE_MAP.containsKey(key)) {
-                        boolean isSameFile = FileUtil.isSmaeFile(file, FILE_MAP.get(key));
-                        if (!isSameFile) {
-                            fileModel.addDiffFile(file);
+                        if (!file.isDirectory()) {
+                            boolean isSameFile = FileUtil.isSmaeFile(file, FILE_MAP.get(key));
+                            if (!isSameFile) {
+                                fileModel.addDiffFile(file);
+                            }
                         }
                     } else {
                         fileModel.addFile(file);

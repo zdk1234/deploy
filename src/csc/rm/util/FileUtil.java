@@ -42,6 +42,7 @@ public class FileUtil {
         if (target.isFile()) {
             fileList.add(target);
         } else if (target.isDirectory()) {
+            fileList.add(target);
             final File[] files = target.listFiles();
             if (files != null && files.length != 0) {
                 Arrays.stream(files).forEach(file -> {
