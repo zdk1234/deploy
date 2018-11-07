@@ -5,10 +5,7 @@ import csc.rm.util.FileUtil;
 import csc.rm.util.PropertiesUtil;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DeployMonitor {
 
-    private static Map<String, File> FILE_MAP = new HashMap<>();
+    private static Map<String, File> FILE_MAP = new LinkedHashMap<>();
 
     private static Executor executor = Executors.newSingleThreadExecutor();
 
@@ -137,7 +134,7 @@ public class DeployMonitor {
             throw new IllegalStateException("检索目标:" + folder.getAbsolutePath() + "不是一个文件夹");
         }
         List<File> fileList = FileUtil.getFileList(folder);
-        Map<String, File> tMap = new HashMap<>();
+        Map<String, File> tMap = new LinkedHashMap<>();
         fileList.forEach(file -> tMap.put(file.getAbsolutePath(), file));
         return tMap;
     }
