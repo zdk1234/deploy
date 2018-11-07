@@ -35,6 +35,12 @@ public class FileModel implements Serializable {
         this.deletedFileList = deletedFileList;
     }
 
+    public void clear() {
+        this.addedFileList = new ArrayList<>();
+        this.diffFileList = new ArrayList<>();
+        this.deletedFileList = new ArrayList<>();
+    }
+
     public void addFile(File file) {
         this.addedFileList.add(file);
     }

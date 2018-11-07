@@ -1,10 +1,16 @@
 package csc.rm.logic;
 
 import csc.rm.bean.FileModel;
+import csc.rm.rmi.RmiFileTransfer;
+import csc.rm.rmi.RmiHandleFactory;
+import csc.rm.rmi.RmiService;
 import csc.rm.util.FileUtil;
 import csc.rm.util.PropertiesUtil;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -30,6 +36,10 @@ public class DeployMonitor {
 
     private static Thread monitorThread;
 
+    private static String rmiUri = PropertiesUtil.getValue("rmi.uri");
+
+    private static FileModel fileModel = new FileModel();
+
     private static AtomicBoolean runSwitch = new AtomicBoolean(true);
 
     private DeployMonitor() {
@@ -45,6 +55,10 @@ public class DeployMonitor {
         monitorThread = new Thread(DeployMonitor::monitor);
         monitorThread.setDaemon(true);
         inited = true;
+    }
+
+    public static FileModel getFileModel() {
+        return fileModel;
     }
 
     /**
@@ -71,7 +85,6 @@ public class DeployMonitor {
         while (runSwitch.get()) {
             try {
                 final Map<String, File> fileMap = getFiles(sourcePath);
-                FileModel fileModel = new FileModel();
 
                 // 获取新增&修改的文件
                 for (Map.Entry<String, File> entry : fileMap.entrySet()) {
@@ -111,6 +124,24 @@ public class DeployMonitor {
                     System.out.println("删除:" + deletedFileList);
                 }
 
+                RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
+                rmiFileTransfer.setFileModel(fileModel);
+
+                Map<String, byte[]> dataMap = new HashMap<>();
+                addedFileList.forEach(file -> {
+                    try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
+                        byte[] bytes = bis.readAllBytes();
+                        dataMap.put(file.getAbsolutePath(), bytes);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+                rmiFileTransfer.setDataMap(dataMap);
+
+                RmiService rmiService = (RmiService) RmiHandleFactory.getRempte(rmiUri);
+                rmiService.getRmiFileTransfer(rmiFileTransfer);
+
+                fileModel.clear();
                 FILE_MAP = new HashMap<>(fileMap);
                 TimeUnit.SECONDS.sleep(1);
             } catch (Exception e) {
