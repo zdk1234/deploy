@@ -11,6 +11,8 @@ import java.util.List;
  */
 public class FileModel implements Serializable {
 
+    private static final long serialVersionUID = 6780835632676467975L;
+
     /**
      * 新增的文件
      */
@@ -35,10 +37,9 @@ public class FileModel implements Serializable {
         this.deletedFileList = deletedFileList;
     }
 
-    public void clear() {
-        this.addedFileList = new ArrayList<>();
-        this.diffFileList = new ArrayList<>();
-        this.deletedFileList = new ArrayList<>();
+    public boolean isChange() {
+        boolean f = addedFileList.isEmpty() && diffFileList.isEmpty() && deletedFileList.isEmpty();
+        return !f;
     }
 
     public void addFile(File file) {
