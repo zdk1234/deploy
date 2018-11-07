@@ -138,6 +138,14 @@ public class DeployMonitor {
                             e.printStackTrace();
                         }
                     });
+                    diffFileList.stream().filter(fileBase -> !fileBase.isDirectory()).forEach(fileBase -> {
+                        try (InputStream is = new FileInputStream(new File(fileBase.getFilePath())); BufferedInputStream bis = new BufferedInputStream(is)) {
+                            byte[] bytes = bis.readAllBytes();
+                            dataMap.put(fileBase.getFilePath(), bytes);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
                     rmiFileTransfer.setDataMap(dataMap);
 
                     RmiService rmiService = (RmiService) RmiHandleFactory.getRempte(rmiUri);
