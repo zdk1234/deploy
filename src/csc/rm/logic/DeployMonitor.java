@@ -10,6 +10,8 @@ import csc.rm.util.FileUtil;
 import csc.rm.util.PropertiesUtil;
 
 import java.io.*;
+import java.rmi.ConnectException;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -76,6 +78,8 @@ public class DeployMonitor {
      */
     private static void monitor() {
         while (runSwitch.get()) {
+            RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
+            RmiService rmiService;
             try {
                 final Map<String, CompareableFileBean> fileMap = getFiles(sourcePath);
                 FileModel fileModel = new FileModel();
@@ -125,7 +129,6 @@ public class DeployMonitor {
                 }
 
                 if (fileModel.isChange()) {
-                    RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
                     rmiFileTransfer.setFileModel(fileModel);
                     rmiFileTransfer.setSourcePath(sourcePath);
 
@@ -141,12 +144,23 @@ public class DeployMonitor {
                     });
                     rmiFileTransfer.setDataMap(dataMap);
 
-                    RmiService rmiService = (RmiService) RmiHandleFactory.getRempte(rmiUri);
+                    rmiService = (RmiService) RmiHandleFactory.getRempte(rmiUri);
                     rmiService.getRmiFileTransfer(rmiFileTransfer);
                 }
 
                 FILE_MAP = new HashMap<>(fileMap);
                 TimeUnit.SECONDS.sleep(1);
+            } catch (RemoteException e) {
+                if (e instanceof ConnectException) {
+                    try {
+                        rmiService = (RmiService) RmiHandleFactory.registry(rmiUri);
+                        rmiService.getRmiFileTransfer(rmiFileTransfer);
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
+                } else {
+                    e.printStackTrace();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

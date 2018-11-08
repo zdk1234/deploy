@@ -1,6 +1,7 @@
 package csc.rm.rmi;
 
 import java.rmi.Remote;
+import java.rmi.RemoteException;
 
 /**
  * 功能描述:
@@ -8,6 +9,6 @@ import java.rmi.Remote;
  */
 public interface RmiService extends Remote {
 
-    int getRmiFileTransfer(RmiFileTransfer rmiFileTransfer);
+    int getRmiFileTransfer(RmiFileTransfer rmiFileTransfer) throws RemoteException;
 
 }
