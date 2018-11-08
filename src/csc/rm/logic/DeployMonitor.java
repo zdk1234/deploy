@@ -101,7 +101,6 @@ public class DeployMonitor {
     private static void monitor() {
         while (runSwitch.get()) {
             RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
-            RmiService rmiService;
             try {
                 final Map<String, CompareableFileBean> fileMap = getFiles(sourcePath);
                 FileModel fileModel = new FileModel();
@@ -189,14 +188,10 @@ public class DeployMonitor {
             rmiService.getRmiFileTransfer(rmiFileTransfer);
         } catch (RemoteException e) {
             if (e instanceof ConnectException) {
-                try {
-                    rmiService = (RmiService) RmiHandleFactory.registry(rmiUri);
-                    rmiService.getRmiFileTransfer(rmiFileTransfer);
-                } catch (Exception e1) {
-                    e1.printStackTrace();
-                }
+                rmiService = (RmiService) RmiHandleFactory.registry(rmiUri);
+                rmiService.getRmiFileTransfer(rmiFileTransfer);
             } else {
-                e.printStackTrace();
+                throw e;
             }
         }
     }
