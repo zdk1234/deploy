@@ -127,6 +127,7 @@ public class DeployMonitor {
                 if (fileModel.isChange()) {
                     RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
                     rmiFileTransfer.setFileModel(fileModel);
+                    rmiFileTransfer.setSourcePath(sourcePath);
 
                     Map<String, byte[]> dataMap = new HashMap<>();
                     addedFileList.addAll(diffFileList);
