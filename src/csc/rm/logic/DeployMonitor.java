@@ -45,12 +45,34 @@ public class DeployMonitor {
 
     }
 
-    public static void init() throws IOException {
+    public static void init() throws Exception {
         sourcePath = PropertiesUtil.getValue("monitor.sourcepath");
         if (Objects.equals(sourcePath, "")) {
             throw new IllegalStateException("conf/config.properties -> monitor.sourcepath 配置监视目录为空");
         }
         FILE_MAP = getFiles(sourcePath);
+
+        // 第一次启动全文件同步
+        /*RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
+        Map<String, byte[]> dataMap = new HashMap<>();
+        FileModel fileModel = new FileModel();
+        for (Map.Entry<String, CompareableFileBean> entry : FILE_MAP.entrySet()) {
+            String key = entry.getKey();
+            CompareableFileBean cfb = entry.getValue();
+            File file = cfb.getFile();
+            fileModel.addFile(new FileBase(key, file.isDirectory()));
+            if (!file.isDirectory()) {
+                try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
+                    byte[] bytes = bis.readAllBytes();
+                    dataMap.put(key, bytes);
+                }
+            }
+        }
+        rmiFileTransfer.setFileModel(fileModel);
+        rmiFileTransfer.setDataMap(dataMap);
+        rmiFileTransfer.setSourcePath(sourcePath);
+        sendRmiFileTransfer(rmiFileTransfer);*/
+
         monitorThread = new Thread(DeployMonitor::monitor);
         monitorThread.setDaemon(true);
         inited = true;
@@ -144,24 +166,36 @@ public class DeployMonitor {
                     });
                     rmiFileTransfer.setDataMap(dataMap);
 
-                    rmiService = (RmiService) RmiHandleFactory.getRempte(rmiUri);
-                    rmiService.getRmiFileTransfer(rmiFileTransfer);
+                    sendRmiFileTransfer(rmiFileTransfer);
                 }
 
                 FILE_MAP = new HashMap<>(fileMap);
                 TimeUnit.SECONDS.sleep(1);
-            } catch (RemoteException e) {
-                if (e instanceof ConnectException) {
-                    try {
-                        rmiService = (RmiService) RmiHandleFactory.registry(rmiUri);
-                        rmiService.getRmiFileTransfer(rmiFileTransfer);
-                    } catch (Exception e1) {
-                        e1.printStackTrace();
-                    }
-                } else {
-                    e.printStackTrace();
-                }
             } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * RMI发送文件数据
+     *
+     * @param rmiFileTransfer
+     */
+    private static void sendRmiFileTransfer(RmiFileTransfer rmiFileTransfer) throws Exception {
+        RmiService rmiService;
+        try {
+            rmiService = (RmiService) RmiHandleFactory.getRempte(rmiUri);
+            rmiService.getRmiFileTransfer(rmiFileTransfer);
+        } catch (RemoteException e) {
+            if (e instanceof ConnectException) {
+                try {
+                    rmiService = (RmiService) RmiHandleFactory.registry(rmiUri);
+                    rmiService.getRmiFileTransfer(rmiFileTransfer);
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+            } else {
                 e.printStackTrace();
             }
         }
