@@ -110,7 +110,6 @@ public class DeployMonitor {
                     }
                 });
 
-                //TODO: 调用RMI接口告知 fileModel 并让client端读取变动文件
                 List<FileBase> addedFileList = fileModel.getAddedFileList();
                 List<FileBase> diffFileList = fileModel.getDiffFileList();
                 List<FileBase> deletedFileList = fileModel.getDeletedFileList();
@@ -130,15 +129,8 @@ public class DeployMonitor {
                     rmiFileTransfer.setFileModel(fileModel);
 
                     Map<String, byte[]> dataMap = new HashMap<>();
+                    addedFileList.addAll(diffFileList);
                     addedFileList.stream().filter(fileBase -> !fileBase.isDirectory()).forEach(fileBase -> {
-                        try (InputStream is = new FileInputStream(new File(fileBase.getFilePath())); BufferedInputStream bis = new BufferedInputStream(is)) {
-                            byte[] bytes = bis.readAllBytes();
-                            dataMap.put(fileBase.getFilePath(), bytes);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
-                    diffFileList.stream().filter(fileBase -> !fileBase.isDirectory()).forEach(fileBase -> {
                         try (InputStream is = new FileInputStream(new File(fileBase.getFilePath())); BufferedInputStream bis = new BufferedInputStream(is)) {
                             byte[] bytes = bis.readAllBytes();
                             dataMap.put(fileBase.getFilePath(), bytes);
