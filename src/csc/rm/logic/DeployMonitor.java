@@ -172,9 +172,8 @@ public class DeployMonitor {
                     rmiFileTransfer.setDataMap(dataMap);
 
                     sendRmiFileTransfer(rmiFileTransfer);
+                    FILE_MAP = new HashMap<>(fileMap);
                 }
-
-                FILE_MAP = new HashMap<>(fileMap);
                 TimeUnit.SECONDS.sleep(1);
             } catch (Exception e) {
                 e.printStackTrace();
