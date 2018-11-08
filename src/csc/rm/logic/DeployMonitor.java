@@ -7,6 +7,7 @@ import csc.rm.rmi.RmiFileTransfer;
 import csc.rm.rmi.RmiHandleFactory;
 import csc.rm.rmi.RmiService;
 import csc.rm.util.FileUtil;
+import csc.rm.util.LoggerUtil;
 import csc.rm.util.PropertiesUtil;
 
 import java.io.*;
@@ -15,7 +16,6 @@ import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by zhaodengke on 2018/11/6.
  */
 public class DeployMonitor {
+
+    private static final LoggerUtil LOGGER = new LoggerUtil(DeployMonitor.class);
 
     private static Map<String, CompareableFileBean> FILE_MAP = new LinkedHashMap<>();
 
@@ -62,26 +64,31 @@ public class DeployMonitor {
         for (Map.Entry<String, CompareableFileBean> entry : FILE_MAP.entrySet()) {
             String key = entry.getKey();
             CompareableFileBean cfb = entry.getValue();
-            File file = cfb.getFile();
-            long modifiedTime = file.lastModified() / 1000;
-            if (isSynchronizeAll || modifiedTime > now) {
-                fileModel.addFile(new FileBase(key, file.isDirectory()));
-                if (!file.isDirectory()) {
-                    try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
-                        byte[] bytes = bis.readAllBytes();
-                        dataMap.put(key, bytes);
+            if (!Objects.equals(new File(sourcePath).getAbsolutePath(), key)) {
+                File file = cfb.getFile();
+                long modifiedTime = file.lastModified() / 1000;
+                if (isSynchronizeAll || modifiedTime > now) {
+                    fileModel.addFile(new FileBase(key, file.isDirectory()));
+                    if (!file.isDirectory()) {
+                        try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
+                            byte[] bytes = bis.readAllBytes();
+                            dataMap.put(key, bytes);
+                        }
                     }
                 }
             }
         }
-        rmiFileTransfer.setFileModel(fileModel);
-        rmiFileTransfer.setDataMap(dataMap);
-        rmiFileTransfer.setSourcePath(sourcePath);
-        sendRmiFileTransfer(rmiFileTransfer);
+        if (fileModel.isChange()) {
+            rmiFileTransfer.setFileModel(fileModel);
+            rmiFileTransfer.setDataMap(dataMap);
+            rmiFileTransfer.setSourcePath(sourcePath);
+            sendRmiFileTransfer(rmiFileTransfer);
+        }
 
         monitorThread = new Thread(DeployMonitor::monitor);
         monitorThread.setDaemon(true);
         inited = true;
+        LOGGER.info("启动完成");
     }
 
     /**
@@ -169,13 +176,13 @@ public class DeployMonitor {
 
                 if (fileModel.isChange()) {
                     if (!addedFileList.isEmpty()) {
-                        System.out.println("新增:" + addedFileList);
+                        LOGGER.info("新增:" + addedFileList);
                     }
                     if (diffFileList.size() != 0) {
-                        System.out.println("修改:" + diffFileList);
+                        LOGGER.info("修改:" + diffFileList);
                     }
                     if (deletedFileList.size() != 0) {
-                        System.out.println("删除:" + deletedFileList);
+                        LOGGER.info("删除:" + deletedFileList);
                     }
 
                     rmiFileTransfer.setFileModel(fileModel);
