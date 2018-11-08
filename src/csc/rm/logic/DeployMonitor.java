@@ -52,7 +52,7 @@ public class DeployMonitor {
         if (Objects.equals(sourcePath, "")) {
             throw new IllegalStateException("conf/config.properties -> monitor.sourcepath 配置监视目录为空");
         }
-        FILE_MAP = getFiles(sourcePath);
+        FILE_MAP = getFiles(sourcePath, true);
 
         // 第一次启动同步最后修改时间为24小时以内的文件
         long now = System.currentTimeMillis() / 1000 - 86400000;
@@ -108,8 +108,37 @@ public class DeployMonitor {
         while (runSwitch.get()) {
             RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
             try {
-                final Map<String, CompareableFileBean> fileMap = getFiles(sourcePath);
+                final Map<String, CompareableFileBean> fileMap = getFiles(sourcePath, false);
+
                 FileModel fileModel = new FileModel();
+
+                // 获取删除的文件
+                FILE_MAP.forEach((key, cfb) -> {
+                    if (!fileMap.containsKey(key)) {
+                        File file = cfb.getFile();
+                        fileModel.addDeletedFile(new FileBase(file.getAbsolutePath(), file.isDirectory()));
+                    }
+                });
+
+                fileMap.forEach((path, cfb) -> {
+                    File file = cfb.getFile();
+                    boolean exists = file.exists();
+                    if (exists) {
+                        if (!file.isDirectory()) {
+                            try {
+                                String fileMD5 = FileUtil.getFileMD5(file);
+                                cfb.setMD5(fileMD5);
+                            } catch (FileNotFoundException e) {
+                                fileModel.addDeletedFile(new FileBase(path, false));
+                            } catch (IOException e) {
+                            }
+                        }
+                    } else {
+                        fileModel.addDeletedFile(new FileBase(path, false));
+                    }
+                });
+
+                List<FileBase> deletedFileList = fileModel.getDeletedFileList();
 
                 // 获取新增&修改的文件
                 for (Map.Entry<String, CompareableFileBean> entry : fileMap.entrySet()) {
@@ -118,32 +147,25 @@ public class DeployMonitor {
                     CompareableFileBean compareableFileBean = entry.getValue();
                     File file = compareableFileBean.getFile();
 
-                    if (FILE_MAP.containsKey(key)) {
-                        if (!file.isDirectory()) {
-                            CompareableFileBean cfb = FILE_MAP.get(key);
-                            if (cfb != null) {
-                                boolean isSameFile = Objects.equals(cfb.getMD5(), compareableFileBean.getMD5());
-                                if (!isSameFile) {
-                                    fileModel.addDiffFile(new FileBase(file.getAbsolutePath(), false));
+                    if (deletedFileList.stream().noneMatch(fileBase -> Objects.equals(fileBase.getFilePath(), key))) {
+                        if (FILE_MAP.containsKey(key)) {
+                            if (!file.isDirectory()) {
+                                CompareableFileBean cfb = FILE_MAP.get(key);
+                                if (cfb != null) {
+                                    boolean isSameFile = Objects.equals(cfb.getMD5(), compareableFileBean.getMD5());
+                                    if (!isSameFile) {
+                                        fileModel.addDiffFile(new FileBase(file.getAbsolutePath(), false));
+                                    }
                                 }
                             }
+                        } else {
+                            fileModel.addFile(new FileBase(file.getAbsolutePath(), file.isDirectory()));
                         }
-                    } else {
-                        fileModel.addFile(new FileBase(file.getAbsolutePath(), file.isDirectory()));
                     }
                 }
 
-                // 获取删除的文件
-                FILE_MAP.forEach((key, compareableFileBean) -> {
-                    if (!fileMap.containsKey(key)) {
-                        File file = compareableFileBean.getFile();
-                        fileModel.addDeletedFile(new FileBase(file.getAbsolutePath(), file.isDirectory()));
-                    }
-                });
-
                 List<FileBase> addedFileList = fileModel.getAddedFileList();
                 List<FileBase> diffFileList = fileModel.getDiffFileList();
-                List<FileBase> deletedFileList = fileModel.getDeletedFileList();
 
                 if (fileModel.isChange()) {
                     if (!addedFileList.isEmpty()) {
@@ -174,7 +196,6 @@ public class DeployMonitor {
                     sendRmiFileTransfer(rmiFileTransfer);
                     FILE_MAP = new HashMap<>(fileMap);
                 }
-                TimeUnit.SECONDS.sleep(1);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -207,7 +228,7 @@ public class DeployMonitor {
      * @param path
      * @return
      */
-    private static Map<String, CompareableFileBean> getFiles(String path) throws IOException {
+    private static Map<String, CompareableFileBean> getFiles(String path, boolean isMD5Set) throws IOException {
         File folder = new File(path);
         if (!folder.exists()) {
             throw new IllegalStateException("检索文件夹不存在:" + folder.getAbsolutePath());
@@ -218,7 +239,11 @@ public class DeployMonitor {
         List<File> fileList = FileUtil.getFileList(folder);
         Map<String, CompareableFileBean> tMap = new LinkedHashMap<>();
         for (File file : fileList) {
-            tMap.put(file.getAbsolutePath(), new CompareableFileBean(file, file.isDirectory() ? null : FileUtil.getFileMD5(file)));
+            String md5 = null;
+            if (!file.isDirectory() && isMD5Set) {
+                md5 = FileUtil.getFileMD5(file);
+            }
+            tMap.put(file.getAbsolutePath(), new CompareableFileBean(file, md5));
         }
         return tMap;
     }
