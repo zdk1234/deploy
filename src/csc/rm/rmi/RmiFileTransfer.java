@@ -13,6 +13,9 @@ import java.util.Map;
 public class RmiFileTransfer implements Serializable {
 
     private static final long serialVersionUID = -7669925635714569018L;
+
+    private String sourcePath;
+
     private FileModel fileModel;
 
     private Map<String, byte[]> dataMap = new HashMap<>();
@@ -23,6 +26,14 @@ public class RmiFileTransfer implements Serializable {
 
     public void setFileModel(FileModel fileModel) {
         this.fileModel = fileModel;
+    }
+
+    public String getSourcePath() {
+        return sourcePath;
+    }
+
+    public void setSourcePath(String sourcePath) {
+        this.sourcePath = sourcePath;
     }
 
     public Map<String, byte[]> getDataMap() {
