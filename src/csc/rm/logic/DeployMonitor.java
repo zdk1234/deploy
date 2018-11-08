@@ -39,6 +39,8 @@ public class DeployMonitor {
 
     private static String rmiUri = PropertiesUtil.getValue("rmi.uri");
 
+    private static boolean isSynchronizeAll = Boolean.valueOf(PropertiesUtil.getValue("monitor.synchronizeall"));
+
     private static AtomicBoolean runSwitch = new AtomicBoolean(true);
 
     private DeployMonitor() {
@@ -52,26 +54,30 @@ public class DeployMonitor {
         }
         FILE_MAP = getFiles(sourcePath);
 
-        // 第一次启动全文件同步
-        /*RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
+        // 第一次启动同步最后修改时间为24小时以内的文件
+        long now = System.currentTimeMillis() / 1000 - 86400000;
+        RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
         Map<String, byte[]> dataMap = new HashMap<>();
         FileModel fileModel = new FileModel();
         for (Map.Entry<String, CompareableFileBean> entry : FILE_MAP.entrySet()) {
             String key = entry.getKey();
             CompareableFileBean cfb = entry.getValue();
             File file = cfb.getFile();
-            fileModel.addFile(new FileBase(key, file.isDirectory()));
-            if (!file.isDirectory()) {
-                try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
-                    byte[] bytes = bis.readAllBytes();
-                    dataMap.put(key, bytes);
+            long modifiedTime = file.lastModified() / 1000;
+            if (isSynchronizeAll || modifiedTime > now) {
+                fileModel.addFile(new FileBase(key, file.isDirectory()));
+                if (!file.isDirectory()) {
+                    try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
+                        byte[] bytes = bis.readAllBytes();
+                        dataMap.put(key, bytes);
+                    }
                 }
             }
         }
         rmiFileTransfer.setFileModel(fileModel);
         rmiFileTransfer.setDataMap(dataMap);
         rmiFileTransfer.setSourcePath(sourcePath);
-        sendRmiFileTransfer(rmiFileTransfer);*/
+        sendRmiFileTransfer(rmiFileTransfer);
 
         monitorThread = new Thread(DeployMonitor::monitor);
         monitorThread.setDaemon(true);
