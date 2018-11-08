@@ -118,17 +118,17 @@ public class DeployMonitor {
                 List<FileBase> diffFileList = fileModel.getDiffFileList();
                 List<FileBase> deletedFileList = fileModel.getDeletedFileList();
 
-                if (addedFileList.size() != 0) {
-                    System.out.println("新增:" + addedFileList);
-                }
-                if (diffFileList.size() != 0) {
-                    System.out.println("修改:" + diffFileList);
-                }
-                if (deletedFileList.size() != 0) {
-                    System.out.println("删除:" + deletedFileList);
-                }
-
                 if (fileModel.isChange()) {
+                    if (!addedFileList.isEmpty()) {
+                        System.out.println("新增:" + addedFileList);
+                    }
+                    if (diffFileList.size() != 0) {
+                        System.out.println("修改:" + diffFileList);
+                    }
+                    if (deletedFileList.size() != 0) {
+                        System.out.println("删除:" + deletedFileList);
+                    }
+
                     rmiFileTransfer.setFileModel(fileModel);
                     rmiFileTransfer.setSourcePath(sourcePath);
 

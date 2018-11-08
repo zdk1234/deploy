@@ -22,6 +22,14 @@ public class FileBase implements Serializable {
         this.isDirectory = isDirectory;
     }
 
+    @Override
+    public String toString() {
+        return "FileBase{" +
+                "filePath='" + filePath + '\'' +
+                ", isDirectory=" + isDirectory +
+                '}';
+    }
+
     public String getFilePath() {
         return filePath;
     }
