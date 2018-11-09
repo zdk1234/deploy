@@ -56,7 +56,14 @@ public class DeployMonitor {
         }
         FILE_MAP = getFiles(sourcePath, true);
 
+        LOGGER.info("<初始化> RMI服务端地址:" + rmiUri);
+
         // 第一次启动同步最后修改时间为24小时以内的文件
+        if (isSynchronizeAll) {
+            LOGGER.info("<初始化> 正在同步" + sourcePath + "中全部文件...");
+        } else {
+            LOGGER.info("<初始化> 正在同步" + sourcePath + "中24小时以内修改的文件...");
+        }
         long now = System.currentTimeMillis() / 1000 - 86400000;
         RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
         Map<String, byte[]> dataMap = new HashMap<>();
@@ -84,11 +91,12 @@ public class DeployMonitor {
             rmiFileTransfer.setSourcePath(sourcePath);
             sendRmiFileTransfer(rmiFileTransfer);
         }
+        LOGGER.info("<初始化> 同步成功");
 
         monitorThread = new Thread(DeployMonitor::monitor);
         monitorThread.setDaemon(true);
         inited = true;
-        LOGGER.info("启动完成");
+        LOGGER.info("<初始化> 启动完成");
     }
 
     /**
@@ -138,6 +146,7 @@ public class DeployMonitor {
                             } catch (FileNotFoundException e) {
                                 fileModel.addDeletedFile(new FileBase(path, false));
                             } catch (IOException e) {
+                                LOGGER.error(e);
                             }
                         }
                     } else {
@@ -175,15 +184,20 @@ public class DeployMonitor {
                 List<FileBase> diffFileList = fileModel.getDiffFileList();
 
                 if (fileModel.isChange()) {
+                    final StringBuilder builder = new StringBuilder();
                     if (!addedFileList.isEmpty()) {
-                        LOGGER.info("新增:" + addedFileList);
+                        builder.append("\n新增:\n");
+                        addedFileList.forEach(fileBase -> builder.append("\t").append(fileBase.toString()).append("\n"));
                     }
                     if (diffFileList.size() != 0) {
-                        LOGGER.info("修改:" + diffFileList);
+                        builder.append("\n修改:\n");
+                        diffFileList.forEach(fileBase -> builder.append("\t").append(fileBase.toString()).append("\n"));
                     }
                     if (deletedFileList.size() != 0) {
-                        LOGGER.info("删除:" + deletedFileList);
+                        builder.append("\n删除:\n");
+                        deletedFileList.forEach(fileBase -> builder.append("\t").append(fileBase.toString()).append("\n"));
                     }
+                    LOGGER.info(builder.toString());
 
                     rmiFileTransfer.setFileModel(fileModel);
                     rmiFileTransfer.setSourcePath(sourcePath);
