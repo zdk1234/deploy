@@ -186,15 +186,15 @@ public class DeployMonitor {
                 if (fileModel.isChange()) {
                     final StringBuilder builder = new StringBuilder();
                     if (!addedFileList.isEmpty()) {
-                        builder.append("\n新增:\n");
+                        builder.append("新增:\n");
                         addedFileList.forEach(fileBase -> builder.append("\t").append(fileBase.toString()).append("\n"));
                     }
                     if (diffFileList.size() != 0) {
-                        builder.append("\n修改:\n");
+                        builder.append("修改:\n");
                         diffFileList.forEach(fileBase -> builder.append("\t").append(fileBase.toString()).append("\n"));
                     }
                     if (deletedFileList.size() != 0) {
-                        builder.append("\n删除:\n");
+                        builder.append("删除:\n");
                         deletedFileList.forEach(fileBase -> builder.append("\t").append(fileBase.toString()).append("\n"));
                     }
                     LOGGER.info(builder.toString());
