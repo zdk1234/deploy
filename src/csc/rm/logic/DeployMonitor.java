@@ -39,7 +39,7 @@ public class DeployMonitor {
 
     private static Thread monitorThread;
 
-    private static String rmiUri = PropertiesUtil.getValue("rmi.uri");
+    private static String rmiUri = PropertiesUtil.getValue("rmi.uri") + ":" + PropertiesUtil.getValue("rmi.port") + "/" + PropertiesUtil.getValue("rmi.context");
 
     private static boolean isSynchronizeAll = Boolean.valueOf(PropertiesUtil.getValue("monitor.synchronizeall"));
 
