@@ -43,6 +43,8 @@ public class DeployMonitor {
 
     private static boolean isSynchronizeAll = Boolean.valueOf(PropertiesUtil.getValue("monitor.synchronizeall"));
 
+    private static boolean isSynchronize24 = Boolean.valueOf(PropertiesUtil.getValue("monitor.synchronize.24hours"));
+
     private static AtomicBoolean runSwitch = new AtomicBoolean(true);
 
     private DeployMonitor() {
@@ -58,40 +60,42 @@ public class DeployMonitor {
 
         LOGGER.info("<初始化> RMI服务端地址:" + rmiUri);
 
-        // 第一次启动同步最后修改时间为24小时以内的文件
-        if (isSynchronizeAll) {
-            LOGGER.info("<初始化> 正在同步" + sourcePath + "中全部文件...");
-        } else {
-            LOGGER.info("<初始化> 正在同步" + sourcePath + "中24小时以内修改的文件...");
-        }
-        long now = System.currentTimeMillis() / 1000 - 86400000;
-        RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
-        Map<String, byte[]> dataMap = new HashMap<>();
-        FileModel fileModel = new FileModel();
-        for (Map.Entry<String, CompareableFileBean> entry : FILE_MAP.entrySet()) {
-            String key = entry.getKey();
-            CompareableFileBean cfb = entry.getValue();
-            if (!Objects.equals(new File(sourcePath).getAbsolutePath(), key)) {
-                File file = cfb.getFile();
-                long modifiedTime = file.lastModified() / 1000;
-                if (isSynchronizeAll || modifiedTime > now) {
-                    fileModel.addFile(new FileBase(key, file.isDirectory()));
-                    if (!file.isDirectory()) {
-                        try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
-                            byte[] bytes = bis.readAllBytes();
-                            dataMap.put(key, bytes);
+        if (isSynchronizeAll || isSynchronize24) {
+            // 第一次启动同步最后修改时间为24小时以内的文件
+            if (isSynchronizeAll) {
+                LOGGER.info("<初始化> 正在同步" + sourcePath + "中全部文件...");
+            } else {
+                LOGGER.info("<初始化> 正在同步" + sourcePath + "中24小时以内修改的文件...");
+            }
+            long now = System.currentTimeMillis() / 1000 - 86400000;
+            RmiFileTransfer rmiFileTransfer = new RmiFileTransfer();
+            Map<String, byte[]> dataMap = new HashMap<>();
+            FileModel fileModel = new FileModel();
+            for (Map.Entry<String, CompareableFileBean> entry : FILE_MAP.entrySet()) {
+                String key = entry.getKey();
+                CompareableFileBean cfb = entry.getValue();
+                if (!Objects.equals(new File(sourcePath).getAbsolutePath(), key)) {
+                    File file = cfb.getFile();
+                    long modifiedTime = file.lastModified() / 1000;
+                    if (isSynchronizeAll || (modifiedTime > now && isSynchronize24)) {
+                        fileModel.addFile(new FileBase(key, file.isDirectory()));
+                        if (!file.isDirectory()) {
+                            try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
+                                byte[] bytes = bis.readAllBytes();
+                                dataMap.put(key, bytes);
+                            }
                         }
                     }
                 }
             }
+            if (fileModel.isChange()) {
+                rmiFileTransfer.setFileModel(fileModel);
+                rmiFileTransfer.setDataMap(dataMap);
+                rmiFileTransfer.setSourcePath(sourcePath);
+                sendRmiFileTransfer(rmiFileTransfer);
+            }
+            LOGGER.info("<初始化> 同步成功");
         }
-        if (fileModel.isChange()) {
-            rmiFileTransfer.setFileModel(fileModel);
-            rmiFileTransfer.setDataMap(dataMap);
-            rmiFileTransfer.setSourcePath(sourcePath);
-            sendRmiFileTransfer(rmiFileTransfer);
-        }
-        LOGGER.info("<初始化> 同步成功");
 
         monitorThread = new Thread(DeployMonitor::monitor);
         monitorThread.setDaemon(true);
