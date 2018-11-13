@@ -41,7 +41,7 @@ public class DeployMonitor {
 
     private static String rmiUri = PropertiesUtil.getValue("rmi.uri") + ":" + PropertiesUtil.getValue("rmi.port") + "/" + PropertiesUtil.getValue("rmi.context");
 
-    private static boolean isSynchronizeAll = Boolean.valueOf(PropertiesUtil.getValue("monitor.synchronizeall"));
+    private static boolean isSynchronizeAll = Boolean.valueOf(PropertiesUtil.getValue("monitor.synchronize.all"));
 
     private static boolean isSynchronize24 = Boolean.valueOf(PropertiesUtil.getValue("monitor.synchronize.24hours"));
 
